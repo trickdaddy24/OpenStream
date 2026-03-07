@@ -136,17 +136,22 @@ async def hls_playlist(session_id: str, db: Session = Depends(get_db)):
 
 @router.get("/hls/{session_id}/{segment}")
 async def hls_segment(session_id: str, segment: str, db: Session = Depends(get_db)):
-    """Serve an individual HLS segment (.ts file)."""
+    """Serve an individual HLS segment (.ts file).
+
+    With ``-hls_flags temp_file`` FFmpeg writes to a ``.tmp`` file
+    first and atomically renames when the segment is complete, so
+    existence == fully written.
+    """
     ts = get_session(db, session_id)
     if not ts:
         raise HTTPException(404, "Session not found")
 
     seg_path = get_segment_path(session_id, segment)
 
-    # Wait briefly for the segment to be produced
+    # Wait for FFmpeg to finish writing the segment.
     import asyncio
-    for _ in range(10):
-        if seg_path.exists() and seg_path.stat().st_size > 0:
+    for _ in range(30):  # Up to 15 seconds (covers a full segment encode)
+        if seg_path.exists():
             break
         await asyncio.sleep(0.5)
 

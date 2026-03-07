@@ -3,10 +3,14 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
+# Project root = parent of the openstream/ package directory
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_ENV_FILE = _PROJECT_ROOT / ".env"
+
 
 class Settings(BaseSettings):
     app_name: str = "OpenStream"
-    app_version: str = "0.1.6"
+    app_version: str = "0.1.7"
     secret_key: str = "change-me-in-production"
     debug: bool = False
 
@@ -32,14 +36,17 @@ class Settings(BaseSettings):
     ffprobe_path: str = "ffprobe"
 
     # Transcoding
-    hls_segment_duration: int = 6
+    hls_segment_duration: int = 4  # Shorter segments = faster startup
     max_transcode_sessions: int = 3
 
     # Server
     host: str = "0.0.0.0"
     port: int = 8000
 
-    model_config = {"env_file": ".env", "env_prefix": "OPENSTREAM_"}
+    model_config = {
+        "env_file": str(_ENV_FILE),
+        "env_prefix": "OPENSTREAM_",
+    }
 
 
 settings = Settings()

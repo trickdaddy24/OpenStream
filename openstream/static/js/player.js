@@ -117,9 +117,17 @@ function _loadHls(player, hlsUrl) {
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         // Use HLS.js (Chrome, Firefox, Edge)
         var hls = new Hls({
-            maxBufferLength: 30,
-            maxMaxBufferLength: 60,
+            liveSyncDurationCount: 3,      // Stay 3 segments behind live edge
+            liveMaxLatencyDurationCount: 6,
+            maxBufferLength: 60,           // Buffer up to 60s ahead
+            maxMaxBufferLength: 120,       // Allow up to 120s in good conditions
+            maxBufferHole: 0.5,            // Tolerate small gaps
             startLevel: -1,
+            fragLoadingTimeOut: 20000,     // 20s timeout per segment (transcoding can be slow)
+            fragLoadingMaxRetry: 6,        // Retry segments up to 6 times
+            fragLoadingRetryDelay: 1000,   // 1s between retries
+            levelLoadingTimeOut: 15000,    // 15s timeout for playlist reload
+            levelLoadingMaxRetry: 4,
         });
         hls.loadSource(hlsUrl);
         hls.attachMedia(videoElement);
@@ -142,6 +150,9 @@ function _loadHls(player, hlsUrl) {
                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                     console.log('Attempting HLS recovery...');
                     hls.startLoad();
+                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                    console.log('Attempting HLS media error recovery...');
+                    hls.recoverMediaError();
                 } else {
                     hls.destroy();
                 }

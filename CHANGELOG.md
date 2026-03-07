@@ -4,6 +4,21 @@ All notable changes to OpenStream will be documented in this file.
 
 ---
 
+## [v0.1.7] — 2026-03-07
+
+### Fixed
+- HLS segments served while still being written — added `-hls_flags temp_file` for atomic writes
+- `.env` not loaded when server started from a different directory — now uses absolute path based on project root
+- Transcoding too slow for real-time playback — switched all presets from `veryfast` to `ultrafast`
+- HLS.js buffer underruns — increased buffer to 60s, added retry/timeout tuning for live transcoding
+- Added `hls.recoverMediaError()` for non-fatal media decode errors
+- Reduced default HLS segment duration from 6s to 4s for faster segment production
+- Added `-hls_init_time 1` for a 1-second first segment (near-instant playback start)
+- Increased FFmpeg rate-control bufsize for smoother bitrate output
+- Segment wait timeout increased from 5s to 15s to handle slow encodes
+
+---
+
 ## [v0.1.6] — 2026-03-07
 
 ### Added

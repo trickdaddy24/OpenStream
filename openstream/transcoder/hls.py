@@ -66,9 +66,10 @@ def build_ffmpeg_command(
     cmd.extend([
         "-f", "hls",
         "-hls_time", str(settings.hls_segment_duration),
+        "-hls_init_time", "1",                # Short first segment for fast startup
         "-hls_list_size", "0",
         "-hls_segment_filename", segment_pattern,
-        "-hls_flags", "independent_segments",
+        "-hls_flags", "independent_segments+temp_file",  # temp_file = atomic writes
         "-start_number", "0",
         playlist_path,
     ])
