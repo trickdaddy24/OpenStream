@@ -136,12 +136,18 @@
     </div>
 </section>
 
-<div id="scan-progress-area" class="settings-card" style="display:none">
-    <h4>Scan Progress</h4>
-    <div class="progress-bar-container">
-        <div id="scan-progress-bar" class="progress-bar" style="width: 0%"></div>
+<div id="scan-progress-area" class="scan-progress-card" style="display:none">
+    <div class="scan-progress-header">
+        <h4>Scan Progress</h4>
+        <span id="scan-progress-pct" class="scan-progress-pct">0%</span>
     </div>
-    <p id="scan-progress-text" class="text-muted"></p>
+    <div class="progress-bar-container progress-bar-lg">
+        <div id="scan-progress-bar" class="progress-bar progress-bar-animated" style="width: 0%"></div>
+    </div>
+    <div class="scan-progress-details">
+        <span id="scan-progress-text" class="scan-progress-item"></span>
+        <span id="scan-progress-count" class="scan-progress-count"></span>
+    </div>
 </div>
 {% endblock %}
 
@@ -331,11 +337,25 @@ document.getElementById('add-library-form').addEventListener('submit', async (e)
 async function scanLibrary(id) {
     const r = await fetch(`/api/libraries/${id}/scan`, {method: 'POST'});
     if (r.ok) {
-        // Show progress
+        // Show progress area
         const area = document.getElementById('scan-progress-area');
         area.style.display = 'block';
+        area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
         const bar = document.getElementById('scan-progress-bar');
         const text = document.getElementById('scan-progress-text');
+        const pctLabel = document.getElementById('scan-progress-pct');
+        const countLabel = document.getElementById('scan-progress-count');
+
+        // Reset
+        bar.style.width = '0%';
+        bar.classList.add('progress-bar-animated');
+        text.textContent = 'Starting scan...';
+        pctLabel.textContent = '0%';
+        countLabel.textContent = '';
+
+        // Also notify the global scan bar
+        if (window.__showGlobalScan) window.__showGlobalScan(id);
 
         const evtSource = new EventSource(`/api/scan-progress/${id}`);
         evtSource.onmessage = (e) => {
@@ -343,17 +363,36 @@ async function scanLibrary(id) {
             if (data.event === 'progress') {
                 const pct = Math.round((data.current / data.total) * 100);
                 bar.style.width = pct + '%';
-                text.textContent = `${data.current} / ${data.total} — ${data.title}`;
+                pctLabel.textContent = pct + '%';
+                text.textContent = data.title;
+                countLabel.textContent = `${data.current} of ${data.total}`;
             } else if (data.event === 'complete') {
                 bar.style.width = '100%';
+                bar.classList.remove('progress-bar-animated');
+                bar.classList.add('progress-bar-complete');
+                pctLabel.textContent = '100%';
                 text.textContent = 'Scan complete!';
+                countLabel.textContent = '';
                 evtSource.close();
+                if (window.__hideGlobalScan) window.__hideGlobalScan();
                 setTimeout(() => location.reload(), 1500);
             } else if (data.event === 'error') {
+                bar.classList.remove('progress-bar-animated');
+                bar.classList.add('progress-bar-error');
                 text.textContent = 'Scan error: ' + (data.message || 'unknown');
+                pctLabel.textContent = 'Error';
+                countLabel.textContent = '';
                 evtSource.close();
+                if (window.__hideGlobalScan) window.__hideGlobalScan();
             }
         };
+        evtSource.onerror = () => {
+            text.textContent = 'Connection lost. Refresh to check status.';
+            evtSource.close();
+        };
+    } else {
+        const err = await r.json().catch(() => ({}));
+        alert(err.detail || 'Could not start scan');
     }
 }
 

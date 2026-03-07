@@ -10,7 +10,7 @@ _ENV_FILE = _PROJECT_ROOT / ".env"
 
 class Settings(BaseSettings):
     app_name: str = "OpenStream"
-    app_version: str = "0.1.7"
+    app_version: str = "0.1.8"
     secret_key: str = "change-me-in-production"
     debug: bool = False
 

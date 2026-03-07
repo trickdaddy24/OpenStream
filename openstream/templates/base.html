@@ -28,6 +28,15 @@
         </div>
     </nav>
 
+    <!-- Global scan progress indicator (visible on all pages) -->
+    <div id="global-scan-bar" class="global-scan-bar" style="display:none">
+        <div id="global-scan-fill" class="global-scan-fill"></div>
+        <div class="global-scan-info">
+            <span id="global-scan-text" class="global-scan-text">Scanning...</span>
+            <span id="global-scan-pct" class="global-scan-pct"></span>
+        </div>
+    </div>
+
     {% if update_available %}
     <div id="update-banner" class="update-banner">
         <span>OpenStream <strong>{{ update_remote_version }}</strong> is available (you have {{ update_current_version }}).</span>

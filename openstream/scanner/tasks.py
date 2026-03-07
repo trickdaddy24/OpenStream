@@ -96,9 +96,18 @@ async def _process_movie(db: Session, library: Library, file_info: dict, parsed:
     db.add(mf)
 
 
-async def _process_tv_library(db: Session, library: Library, files: list[dict]):
-    """Process all TV files in a library grouped by show."""
+async def _process_tv_library(
+    db: Session, library: Library, files: list[dict],
+    library_id: int, total: int,
+):
+    """Process all TV files in a library grouped by show.
+
+    Sends SSE progress events as each episode file is processed so
+    the frontend progress bar updates in real time.
+    """
     grouped = group_tv_episodes([{"file_path": f["file_path"], **f} for f in files])
+
+    processed = 0
 
     for show_title, seasons_dict in grouped.items():
         # Check if show already exists
@@ -106,7 +115,13 @@ async def _process_tv_library(db: Session, library: Library, files: list[dict]):
             library_id=library.id, title=show_title, media_type="show"
         ).first()
         if existing_show:
+            # Count the episodes we're skipping so the progress counter stays accurate
+            for _sn, ep_list in seasons_dict.items():
+                processed += len(ep_list)
+            await _send_progress(library_id, processed, total, f"Skipped: {show_title}")
             continue
+
+        await _send_progress(library_id, processed, total, f"Fetching metadata: {show_title}")
 
         # Search TMDB
         tmdb_data = await search_tv(show_title)
@@ -189,6 +204,13 @@ async def _process_tv_library(db: Session, library: Library, files: list[dict]):
                 )
                 db.add(mf)
 
+                processed += 1
+                progress_title = f"{show_title} — S{season_num:02d}E{ep_num:02d}"
+                await _send_progress(library_id, processed, total, progress_title)
+
+                # Rate limit TMDB calls
+                await asyncio.sleep(0.15)
+
 
 async def run_library_scan(library_id: int, db: Session):
     """Main scan entry point. Discovers files, fetches metadata, inserts into DB."""
@@ -210,10 +232,7 @@ async def run_library_scan(library_id: int, db: Session):
         logger.info("Found %d video files in %s", total, library.path)
 
         if library.lib_type == "tv":
-            await _process_tv_library(db, library, files)
-            for i, f in enumerate(files):
-                parsed = identify_media(f["file_path"])
-                await _send_progress(library_id, i + 1, total, parsed["title"])
+            await _process_tv_library(db, library, files, library_id, total)
         else:
             for i, f in enumerate(files):
                 parsed = identify_media(f["file_path"])

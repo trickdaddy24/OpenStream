@@ -4,6 +4,22 @@ All notable changes to OpenStream will be documented in this file.
 
 ---
 
+## [v0.1.8] — 2026-03-07
+
+### Added
+- Real-time scan progress bar for both movie and TV show library scans
+- Global scan indicator bar below the navbar — visible from any page while a scan is running
+- Improved progress UI on Settings page with large percentage display, animated shimmer effect, current item name, and file count
+- TV scan now reports per-episode progress during processing (previously sent all events after processing was complete)
+- Progress bar automatically connects via SSE on page load if a scan is in progress
+- Smooth fade-out animation when scan completes
+
+### Fixed
+- TV library scan progress was broken — progress events were sent after all processing finished instead of during each episode
+- Scan progress now shows show name, season, and episode number for TV scans (e.g., "Breaking Bad — S01E03")
+
+---
+
 ## [v0.1.7] — 2026-03-07
 
 ### Fixed
