@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}OpenStream — Home{% endblock %}
+
+{% block content %}
+<section class="section">
+    <h2 class="section-title">Recently Added</h2>
+    {% if recent_items %}
+    <div class="media-grid">
+        {% for item in recent_items %}
+        {% include "partials/_media_card.html" %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No media yet. Go to <a href="/settings">Settings</a> to add a library and scan.</p>
+    </div>
+    {% endif %}
+</section>
+
+{% if libraries %}
+<section class="section">
+    <h2 class="section-title">Your Libraries</h2>
+    <div class="library-cards">
+        {% for lib in libraries %}
+        <a href="/library/{{ lib.id }}" class="library-card">
+            <div class="library-card-icon">{{ '🎬' if lib.lib_type == 'movie' else '📺' }}</div>
+            <div class="library-card-info">
+                <h3>{{ lib.name }}</h3>
+                <span class="library-card-count">{{ lib.item_count }} items</span>
+                {% if lib.scan_status == 'scanning' %}
+                <span class="badge badge-warning">Scanning...</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

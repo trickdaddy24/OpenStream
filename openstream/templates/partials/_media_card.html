@@ -1,0 +1,16 @@
+<a href="/item/{{ item.id }}" class="media-card">
+    <div class="media-card-poster">
+        {% if item.poster_path %}
+        <img src="/media-images/posters/{{ item.poster_path | replace('\\', '/') | replace('data/metadata/', '') }}"
+             alt="{{ item.title }}" loading="lazy">
+        {% else %}
+        <div class="poster-placeholder">{{ item.title[:1] }}</div>
+        {% endif %}
+    </div>
+    <div class="media-card-info">
+        <span class="media-card-title">{{ item.title }}</span>
+        {% if item.year %}
+        <span class="media-card-year">{{ item.year }}</span>
+        {% endif %}
+    </div>
+</a>

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Settings — OpenStream{% endblock %}
+
+{% block content %}
+<h2>Settings</h2>
+
+<section class="section settings-section">
+    <h3 class="section-title">Libraries</h3>
+
+    <div class="settings-card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Path</th>
+                    <th>Type</th>
+                    <th>Items</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lib in libraries %}
+                <tr>
+                    <td>{{ lib.name }}</td>
+                    <td class="text-muted">{{ lib.path }}</td>
+                    <td>{{ lib.lib_type }}</td>
+                    <td>{{ lib.item_count }}</td>
+                    <td>
+                        {% if lib.scan_status == 'complete' %}
+                        <span class="badge badge-success">Complete</span>
+                        {% elif lib.scan_status == 'scanning' %}
+                        <span class="badge badge-warning">Scanning...</span>
+                        {% elif lib.scan_status == 'error' %}
+                        <span class="badge badge-danger">Error</span>
+                        {% else %}
+                        <span class="badge">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm" onclick="scanLibrary({{ lib.id }})">Scan</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLibrary({{ lib.id }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not libraries %}
+                <tr><td colspan="6" class="text-muted text-center">No libraries configured</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="settings-card">
+        <h4>Add Library</h4>
+        <form id="add-library-form" class="form-inline">
+            <input type="text" name="name" placeholder="Library name" class="input" required>
+            <input type="text" name="path" placeholder="Folder path (e.g., D:\Movies)" class="input input-wide" required>
+            <select name="lib_type" class="select-input">
+                <option value="movie">Movies</option>
+                <option value="tv">TV Shows</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+        <div id="form-message" class="form-message"></div>
+    </div>
+</section>
+
+<div id="scan-progress-area" class="settings-card" style="display:none">
+    <h4>Scan Progress</h4>
+    <div class="progress-bar-container">
+        <div id="scan-progress-bar" class="progress-bar" style="width: 0%"></div>
+    </div>
+    <p id="scan-progress-text" class="text-muted"></p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('add-library-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        name: form.name.value,
+        path: form.path.value,
+        lib_type: form.lib_type.value,
+    };
+    const msg = document.getElementById('form-message');
+    try {
+        const r = await fetch('/api/libraries', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data),
+        });
+        if (r.ok) {
+            msg.textContent = 'Library added!';
+            msg.className = 'form-message success';
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            const err = await r.json();
+            msg.textContent = err.detail || 'Error adding library';
+            msg.className = 'form-message error';
+        }
+    } catch (err) {
+        msg.textContent = 'Network error';
+        msg.className = 'form-message error';
+    }
+});
+
+async function scanLibrary(id) {
+    const r = await fetch(`/api/libraries/${id}/scan`, {method: 'POST'});
+    if (r.ok) {
+        // Show progress
+        const area = document.getElementById('scan-progress-area');
+        area.style.display = 'block';
+        const bar = document.getElementById('scan-progress-bar');
+        const text = document.getElementById('scan-progress-text');
+
+        const evtSource = new EventSource(`/api/scan-progress/${id}`);
+        evtSource.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.event === 'progress') {
+                const pct = Math.round((data.current / data.total) * 100);
+                bar.style.width = pct + '%';
+                text.textContent = `${data.current} / ${data.total} — ${data.title}`;
+            } else if (data.event === 'complete') {
+                bar.style.width = '100%';
+                text.textContent = 'Scan complete!';
+                evtSource.close();
+                setTimeout(() => location.reload(), 1500);
+            } else if (data.event === 'error') {
+                text.textContent = 'Scan error: ' + (data.message || 'unknown');
+                evtSource.close();
+            }
+        };
+    }
+}
+
+async function deleteLibrary(id) {
+    if (!confirm('Delete this library and all its items?')) return;
+    const r = await fetch(`/api/libraries/${id}`, {method: 'DELETE'});
+    if (r.ok) location.reload();
+}
+</script>
+{% endblock %}

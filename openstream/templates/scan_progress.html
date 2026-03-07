@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Scanning — OpenStream{% endblock %}
+
+{% block content %}
+<h2>Scanning Library</h2>
+<div class="settings-card">
+    <div class="progress-bar-container">
+        <div id="scan-bar" class="progress-bar" style="width: 0%"></div>
+    </div>
+    <p id="scan-text" class="text-muted">Starting scan...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/scan.js"></script>
+{% endblock %}

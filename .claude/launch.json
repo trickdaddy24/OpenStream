@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "openstream-dev",
+      "runtimeExecutable": "uvicorn",
+      "runtimeArgs": ["openstream.app:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "port": 8000,
+      "cwd": "G:\\kvcd\\VSCODE - Main\\Plex Stuff\\MediaServer"
+    }
+  ]
+}

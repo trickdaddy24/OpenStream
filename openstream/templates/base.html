@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}OpenStream{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/video.js@8/dist/video-js.min.css" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="/" class="nav-brand">OpenStream</a>
+        </div>
+        <div class="nav-center">
+            <input type="search" id="global-search" class="search-input"
+                   placeholder="Search..." autocomplete="off">
+            <div id="search-results" class="search-dropdown"></div>
+        </div>
+        <div class="nav-right">
+            {% if user %}
+            <span class="nav-user">{{ user.username }}</span>
+            <form action="/auth/logout" method="post" style="display:inline">
+                <button type="submit" class="btn btn-sm">Logout</button>
+            </form>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <h3 class="sidebar-title">Libraries</h3>
+            {% if libraries is defined %}
+            <ul class="sidebar-nav">
+                {% for lib in libraries %}
+                <li>
+                    <a href="/library/{{ lib.id }}" class="sidebar-link">
+                        <span class="lib-icon">{{ '🎬' if lib.lib_type == 'movie' else '📺' }}</span>
+                        {{ lib.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            <a href="/settings" class="sidebar-link sidebar-settings">Settings</a>
+        </aside>
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

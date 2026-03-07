@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ library.name }} — OpenStream{% endblock %}
+
+{% block content %}
+<div class="library-header">
+    <h2>{{ library.name }}</h2>
+    <div class="library-controls">
+        <select id="sort-select" class="select-input" onchange="window.location.href='/library/{{ library.id }}?sort='+this.value">
+            <option value="title" {{ 'selected' if current_sort == 'title' }}>Title</option>
+            <option value="year" {{ 'selected' if current_sort == 'year' }}>Year</option>
+            <option value="rating" {{ 'selected' if current_sort == 'rating' }}>Rating</option>
+            <option value="added" {{ 'selected' if current_sort == 'added' }}>Date Added</option>
+        </select>
+        <span class="item-count">{{ items | length }} items</span>
+    </div>
+</div>
+
+{% if items %}
+<div class="media-grid">
+    {% for item in items %}
+    {% include "partials/_media_card.html" %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No items in this library. <a href="/settings">Scan it</a> to discover media.</p>
+</div>
+{% endif %}
+{% endblock %}

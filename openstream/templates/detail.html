@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — OpenStream{% endblock %}
+
+{% block head %}
+<style>
+    .detail-hero {
+        position: relative;
+        min-height: 400px;
+        background-size: cover;
+        background-position: center;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .detail-hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, rgba(20,20,30,0.95) 40%, rgba(20,20,30,0.3));
+        display: flex;
+        align-items: center;
+        padding: 2rem;
+        gap: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-hero"
+     {% if item.backdrop_path %}style="background-image: url('/media-images/backdrops/{{ item.backdrop_path | replace('\\', '/') | replace('data/metadata/', '') }}')"{% endif %}>
+    <div class="detail-hero-overlay">
+        <div class="detail-poster">
+            {% if item.poster_path %}
+            <img src="/media-images/posters/{{ item.poster_path | replace('\\', '/') | replace('data/metadata/', '') }}"
+                 alt="{{ item.title }}" class="poster-img-lg">
+            {% else %}
+            <div class="poster-placeholder-lg">{{ item.title[:1] }}</div>
+            {% endif %}
+        </div>
+        <div class="detail-info">
+            <h1>{{ item.title }}{% if item.year %} <span class="text-muted">({{ item.year }})</span>{% endif %}</h1>
+            {% if item.tagline %}
+            <p class="detail-tagline">{{ item.tagline }}</p>
+            {% endif %}
+            <div class="detail-meta">
+                {% if item.rating %}<span class="badge">{{ "%.1f" | format(item.rating) }}</span>{% endif %}
+                {% if item.runtime_mins %}<span>{{ item.runtime_mins }} min</span>{% endif %}
+                {% if item.content_rating %}<span class="badge badge-outline">{{ item.content_rating }}</span>{% endif %}
+                {% if item.genres %}<span class="text-muted">{{ item.genres }}</span>{% endif %}
+            </div>
+            {% if item.overview %}
+            <p class="detail-overview">{{ item.overview }}</p>
+            {% endif %}
+
+            {% if item.media_type == 'movie' and files %}
+            <div class="detail-actions">
+                <a href="/play/{{ files[0].id }}" class="btn btn-primary btn-lg">Play</a>
+                {% if files[0].resolution %}
+                <span class="text-muted">{{ files[0].resolution }} &middot; {{ files[0].video_codec }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if item.media_type == 'show' and seasons %}
+<section class="section">
+    <h2 class="section-title">Seasons</h2>
+    {% for season in seasons %}
+    <div class="season-block">
+        <h3 class="season-title">{{ season.name or ("Season " ~ season.season_number) }}</h3>
+        <div class="episode-list">
+            {% for ep in season_episodes.get(season.id, []) %}
+            <div class="episode-row">
+                <span class="ep-number">E{{ "%02d" | format(ep.episode_number) }}</span>
+                <span class="ep-title">{{ ep.title or "Episode " ~ ep.episode_number }}</span>
+                {% if ep.file %}
+                <a href="/play/{{ ep.file.id }}" class="btn btn-sm">Play</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if files %}
+<section class="section">
+    <h2 class="section-title">File Info</h2>
+    {% for f in files %}
+    <div class="file-info-card">
+        <span>{{ f.file_path | replace('\\', '/') | split('/') | last }}</span>
+        <span class="text-muted">
+            {{ f.video_codec or '?' }} / {{ f.audio_codec or '?' }}
+            {% if f.resolution %}&middot; {{ f.resolution }}{% endif %}
+            {% if f.file_size %}&middot; {{ "%.1f" | format(f.file_size / 1073741824) }} GB{% endif %}
+            {% if f.duration_secs %}&middot; {{ (f.duration_secs // 3600) }}h {{ ((f.duration_secs % 3600) // 60) }}m{% endif %}
+        </span>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

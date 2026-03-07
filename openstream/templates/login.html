@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — OpenStream</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-box { width: 100%; max-width: 360px; padding: 2rem; background: var(--surface); border-radius: 12px; }
+        .login-box h1 { text-align: center; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .login-box .input { width: 100%; margin-bottom: 1rem; }
+        .login-box .btn { width: 100%; }
+        .login-error { color: var(--danger); text-align: center; margin-bottom: 1rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>OpenStream</h1>
+        {% if error %}
+        <p class="login-error">{{ error }}</p>
+        {% endif %}
+        <form action="/auth/login" method="post">
+            <input type="text" name="username" placeholder="Username" class="input" required autofocus>
+            <input type="password" name="password" placeholder="Password" class="input" required>
+            <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+    </div>
+</body>
+</html>
