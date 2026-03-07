@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = "OpenStream"
-    app_version: str = "0.1.4"
+    app_version: str = "0.1.5"
     secret_key: str = "change-me-in-production"
     debug: bool = False
 
@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     cache_dir: Path = Path("data/cache/sessions")
     metadata_dir: Path = Path("data/metadata")
     thumbnail_dir: Path = Path("data/thumbnails")
+    log_dir: Path = Path("data/logs")
+
+    # Logging
+    log_max_bytes: int = 5_242_880  # 5 MB per log file
+    log_backup_count: int = 3  # keep 3 rotated backups
 
     # TMDB
     tmdb_api_key: str = ""

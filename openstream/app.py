@@ -1,6 +1,7 @@
 """FastAPI application factory and entry point."""
 
 import logging
+import logging.handlers
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -27,6 +28,7 @@ def _ensure_dirs():
         settings.metadata_dir / "posters",
         settings.metadata_dir / "backdrops",
         settings.thumbnail_dir,
+        settings.log_dir,
     ]:
         d.mkdir(parents=True, exist_ok=True)
 
@@ -60,14 +62,63 @@ async def _startup_update_check():
         pass  # Never let update check crash the app
 
 
+def _setup_logging():
+    """Configure logging with rotating file handler + console output."""
+    log_level = logging.DEBUG if settings.debug else logging.INFO
+    log_format = "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+
+    # Root openstream logger — all submodules inherit
+    root = logging.getLogger("openstream")
+    root.setLevel(log_level)
+
+    # Avoid adding duplicate handlers on reload
+    if root.handlers:
+        return
+
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    # Console handler (stdout)
+    console = logging.StreamHandler()
+    console.setLevel(log_level)
+    console.setFormatter(formatter)
+    root.addHandler(console)
+
+    # Rotating file handler → data/logs/openstream.log
+    log_file = settings.log_dir / "openstream.log"
+    try:
+        file_handler = logging.handlers.RotatingFileHandler(
+            str(log_file),
+            maxBytes=settings.log_max_bytes,
+            backupCount=settings.log_backup_count,
+            encoding="utf-8",
+        )
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        root.addHandler(file_handler)
+    except OSError as e:
+        root.warning("Could not open log file %s: %s", log_file, e)
+
+    # Also capture uvicorn access logs to the same file
+    for uv_name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+        uv_logger = logging.getLogger(uv_name)
+        uv_logger.handlers = []  # remove default handlers
+        uv_logger.addHandler(console)
+        try:
+            uv_logger.addHandler(file_handler)
+        except Exception:
+            pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     import asyncio
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    logger.info("OpenStream %s starting up", settings.app_version)
     _ensure_dirs()
+    _setup_logging()
+    logger.info("OpenStream %s starting up", settings.app_version)
+    logger.info("Log file: %s", settings.log_dir / "openstream.log")
     init_db()
     _ensure_admin()
 

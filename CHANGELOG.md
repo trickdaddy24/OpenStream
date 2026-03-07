@@ -4,6 +4,18 @@ All notable changes to OpenStream will be documented in this file.
 
 ---
 
+## [v0.1.5] — 2026-03-07
+
+### Added
+- Rotating log file at `data/logs/openstream.log` (5 MB max, 3 backups)
+- Log viewer on Settings page with level filtering (All / Errors / Warnings / Info)
+- API endpoints: `GET /api/logs` (admin-only, with `lines` and `level` params), `POST /api/logs/clear`
+- Uvicorn access and error logs now captured in the same log file
+- Timestamps and module names in log format (`YYYY-MM-DD HH:MM:SS  LEVEL  module  message`)
+- Configurable via `OPENSTREAM_LOG_MAX_BYTES` and `OPENSTREAM_LOG_BACKUP_COUNT`
+
+---
+
 ## [v0.1.4] — 2026-03-07
 
 ### Fixed

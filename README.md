@@ -2,7 +2,7 @@
 
 A self-hosted Python media server that scans local video libraries, fetches metadata and artwork from TMDB, and streams content to any browser — with on-the-fly FFmpeg transcoding when needed.
 
-**Current version:** `v0.1.4`
+**Current version:** `v0.1.5`
 
 ---
 
@@ -235,6 +235,8 @@ All settings are controlled via environment variables or a `.env` file in the pr
 | `OPENSTREAM_FFMPEG_PATH` | `ffmpeg` | Path to the FFmpeg binary. Set full path if not on `PATH`. |
 | `OPENSTREAM_FFPROBE_PATH` | `ffprobe` | Path to the FFprobe binary. Set full path if not on `PATH`. |
 | `OPENSTREAM_MAX_TRANSCODE_SESSIONS` | `3` | Maximum concurrent transcode sessions. Raise if your CPU allows. |
+| `OPENSTREAM_LOG_MAX_BYTES` | `5242880` | Max size of each log file in bytes (default 5 MB). |
+| `OPENSTREAM_LOG_BACKUP_COUNT` | `3` | Number of rotated log file backups to keep. |
 
 ### Example `.env`
 
@@ -260,6 +262,7 @@ All runtime data is stored in the `data/` directory (auto-created on first run, 
 | `data/metadata/posters/` | Downloaded TMDB poster images |
 | `data/metadata/backdrops/` | Downloaded TMDB backdrop images |
 | `data/thumbnails/` | FFmpeg-extracted video thumbnails |
+| `data/logs/openstream.log` | Application log file (rotating, 5 MB max) |
 
 ---
 
@@ -361,6 +364,7 @@ All API endpoints return JSON and are prefixed with `/api`.
 
 | Version | Date | Note |
 |---------|------|------|
+| v0.1.5 | 2026-03-07 | Add rotating log file, log viewer in settings, and log API endpoints |
 | v0.1.4 | 2026-03-07 | Fix video player — resolve double init, HLS.js integration, and autoplay issues |
 | v0.1.3 | 2026-03-07 | Add password complexity validation, strength meter, and change password UI |
 | v0.1.2 | 2026-03-07 | Add self-update system with GitHub release checking and auto-update |

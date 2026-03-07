@@ -117,6 +117,25 @@
     </div>
 </section>
 
+<section id="logs" class="section settings-section">
+    <h3 class="section-title">Server Logs</h3>
+    <div class="settings-card">
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem">
+            <select id="log-level-filter" class="select-input">
+                <option value="all">All Levels</option>
+                <option value="error">Errors Only</option>
+                <option value="warning">Warnings & Errors</option>
+                <option value="info">Info & Above</option>
+            </select>
+            <input type="number" id="log-lines" class="input" value="100" min="10" max="2000" style="width:80px" title="Lines">
+            <button class="btn btn-primary" onclick="loadLogs()">Load Logs</button>
+            <button class="btn btn-danger btn-sm" onclick="clearLogs()">Clear Log File</button>
+            <span id="log-info" class="text-muted" style="font-size:0.85rem"></span>
+        </div>
+        <pre id="log-output" class="log-viewer"></pre>
+    </div>
+</section>
+
 <div id="scan-progress-area" class="settings-card" style="display:none">
     <h4>Scan Progress</h4>
     <div class="progress-bar-container">
@@ -414,6 +433,44 @@ async function applyUpdate() {
         btn.disabled = false;
         btn.textContent = 'Retry';
     }
+}
+
+/* ========== Server Logs ========== */
+async function loadLogs() {
+    const output = document.getElementById('log-output');
+    const info = document.getElementById('log-info');
+    const level = document.getElementById('log-level-filter').value;
+    const lines = document.getElementById('log-lines').value;
+
+    output.textContent = 'Loading...';
+    info.textContent = '';
+
+    try {
+        const r = await fetch(`/api/logs?lines=${lines}&level=${level}`);
+        if (r.status === 403) { output.textContent = 'Admin access required.'; return; }
+        const data = await r.json();
+
+        if (data.lines.length === 0) {
+            output.textContent = '(no log entries)';
+        } else {
+            output.textContent = data.lines.join('\n');
+            output.scrollTop = output.scrollHeight;
+        }
+        info.textContent = `Showing ${data.showing} of ${data.total} lines — ${data.log_file}`;
+    } catch (e) {
+        output.textContent = 'Failed to load logs.';
+    }
+}
+
+async function clearLogs() {
+    if (!confirm('Clear the entire log file?')) return;
+    try {
+        const r = await fetch('/api/logs/clear', {method: 'POST'});
+        if (r.ok) {
+            document.getElementById('log-output').textContent = '(log cleared)';
+            document.getElementById('log-info').textContent = '';
+        }
+    } catch (e) { /* silent */ }
 }
 </script>
 {% endblock %}

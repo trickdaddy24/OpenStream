@@ -382,3 +382,80 @@ async def api_update_instructions():
 async def api_apply_update():
     """Execute the update action (git pull or pip upgrade)."""
     return perform_update()
+
+
+# ---------- Logs ----------
+
+@router.get("/logs")
+async def get_logs(
+    lines: int = 200,
+    level: str = "all",
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """Return recent log lines from the log file.
+
+    Query params:
+        lines — max lines to return (default 200, max 2000)
+        level — filter: "all", "error", "warning", "info"
+    """
+    user = get_current_user(request, db)
+    if not user or not user.is_admin:
+        raise HTTPException(403, "Admin access required")
+
+    from openstream.config import settings as _settings
+    log_file = _settings.log_dir / "openstream.log"
+
+    if not log_file.exists():
+        return {"lines": [], "total": 0, "log_file": str(log_file)}
+
+    lines = min(lines, 2000)
+
+    try:
+        with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+            all_lines = f.readlines()
+    except OSError:
+        return {"lines": [], "total": 0, "log_file": str(log_file)}
+
+    # Filter by level
+    if level != "all":
+        level_upper = level.upper()
+        level_map = {
+            "error": ("ERROR", "CRITICAL"),
+            "warning": ("WARNING", "ERROR", "CRITICAL"),
+            "info": ("INFO", "WARNING", "ERROR", "CRITICAL"),
+        }
+        allowed = level_map.get(level, ())
+        if allowed:
+            all_lines = [ln for ln in all_lines if any(lv in ln for lv in allowed)]
+
+    # Return last N lines (most recent)
+    recent = all_lines[-lines:]
+    return {
+        "lines": [ln.rstrip("\n") for ln in recent],
+        "total": len(all_lines),
+        "showing": len(recent),
+        "log_file": str(log_file),
+    }
+
+
+@router.post("/logs/clear")
+async def clear_logs(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Clear the log file. Admin only."""
+    user = get_current_user(request, db)
+    if not user or not user.is_admin:
+        raise HTTPException(403, "Admin access required")
+
+    from openstream.config import settings as _settings
+    log_file = _settings.log_dir / "openstream.log"
+
+    try:
+        with open(log_file, "w", encoding="utf-8") as f:
+            f.write("")
+        logger.info("Log file cleared by user '%s'", user.username)
+        return {"ok": True, "message": "Log file cleared"}
+    except OSError as e:
+        raise HTTPException(500, f"Could not clear log file: {e}")

@@ -482,6 +482,23 @@ a:hover { color: var(--primary-hover); }
 .pw-rule-fail { color: var(--danger); }
 .pw-rule-fail .pw-rule-icon { color: var(--danger); }
 
+/* ---------- Log Viewer ---------- */
+
+.log-viewer {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-height: 500px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
 /* ---------- Update Banner ---------- */
 
 .update-banner {
