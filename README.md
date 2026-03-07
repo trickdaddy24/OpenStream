@@ -2,7 +2,7 @@
 
 A self-hosted Python media server that scans local video libraries, fetches metadata and artwork from TMDB, and streams content to any browser — with on-the-fly FFmpeg transcoding when needed.
 
-**Current version:** `v0.1.5`
+**Current version:** `v0.1.6`
 
 ---
 
@@ -68,6 +68,7 @@ MediaServer/
 │   │   ├── detail.html              #   Movie/show detail + play button
 │   │   ├── player.html              #   Video.js + HLS.js player
 │   │   ├── settings.html            #   Library management + scan controls
+│   │   ├── about.html               #   About page (version, tech stack, links)
 │   │   ├── login.html               #   Login form
 │   │   ├── scan_progress.html       #   Live scan progress via SSE
 │   │   └── partials/                #   Reusable template fragments
@@ -364,6 +365,7 @@ All API endpoints return JSON and are prefixed with `/api`.
 
 | Version | Date | Note |
 |---------|------|------|
+| v0.1.6 | 2026-03-07 | Add About page with version, system info, tech stack, and project links |
 | v0.1.5 | 2026-03-07 | Add rotating log file, log viewer in settings, and log API endpoints |
 | v0.1.4 | 2026-03-07 | Fix video player — resolve double init, HLS.js integration, and autoplay issues |
 | v0.1.3 | 2026-03-07 | Add password complexity validation, strength meter, and change password UI |

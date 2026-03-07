@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}About — OpenStream{% endblock %}
+
+{% block content %}
+<h2>About OpenStream</h2>
+
+<section class="section about-section">
+    <div class="about-hero">
+        <div class="about-logo">OS</div>
+        <div class="about-hero-info">
+            <h1 class="about-app-name">OpenStream</h1>
+            <span class="badge badge-primary about-version">v{{ version }}</span>
+            <p class="about-tagline">A self-hosted Python media server</p>
+        </div>
+    </div>
+</section>
+
+<section class="section about-section">
+    <h3 class="section-title">System Information</h3>
+    <div class="settings-card about-grid">
+        <div class="about-item">
+            <span class="about-label">Version</span>
+            <span class="about-value">v{{ version }}</span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Install Mode</span>
+            <span class="about-value"><span class="badge badge-outline">{{ install_mode }}</span></span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Python</span>
+            <span class="about-value">{{ python_version }}</span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Platform</span>
+            <span class="about-value">{{ platform_info }}</span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Database</span>
+            <span class="about-value">SQLite ({{ db_path }})</span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Libraries</span>
+            <span class="about-value">{{ library_count }}</span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Total Items</span>
+            <span class="about-value">{{ total_items }}</span>
+        </div>
+        <div class="about-item">
+            <span class="about-label">Users</span>
+            <span class="about-value">{{ user_count }}</span>
+        </div>
+    </div>
+</section>
+
+<section class="section about-section">
+    <h3 class="section-title">Tech Stack</h3>
+    <div class="settings-card">
+        <table class="data-table about-tech-table">
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Technology</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Backend</td><td>Python, FastAPI, Uvicorn</td></tr>
+                <tr><td>Templates</td><td>Jinja2 (server-rendered)</td></tr>
+                <tr><td>Database</td><td>SQLite via SQLAlchemy ORM</td></tr>
+                <tr><td>Metadata</td><td>TMDB API via httpx (async)</td></tr>
+                <tr><td>Transcoding</td><td>FFmpeg subprocess (HLS output)</td></tr>
+                <tr><td>Player</td><td>Video.js + HLS.js</td></tr>
+                <tr><td>Auth</td><td>bcrypt + itsdangerous session cookies</td></tr>
+                <tr><td>Styling</td><td>Custom CSS (dark theme, CSS Grid)</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="section about-section">
+    <h3 class="section-title">Links</h3>
+    <div class="settings-card about-links">
+        <a href="https://github.com/trickdaddy24/OpenStream" target="_blank" rel="noopener" class="about-link-card">
+            <span class="about-link-icon">&#128279;</span>
+            <div>
+                <strong>GitHub Repository</strong>
+                <span class="text-muted">Source code, issues, and releases</span>
+            </div>
+        </a>
+        <a href="https://github.com/trickdaddy24/OpenStream/releases" target="_blank" rel="noopener" class="about-link-card">
+            <span class="about-link-icon">&#128230;</span>
+            <div>
+                <strong>Releases</strong>
+                <span class="text-muted">Download the latest version</span>
+            </div>
+        </a>
+        <a href="https://github.com/trickdaddy24/OpenStream/issues" target="_blank" rel="noopener" class="about-link-card">
+            <span class="about-link-icon">&#128196;</span>
+            <div>
+                <strong>Report an Issue</strong>
+                <span class="text-muted">Bug reports and feature requests</span>
+            </div>
+        </a>
+    </div>
+</section>
+
+<section class="section about-section">
+    <h3 class="section-title">License</h3>
+    <div class="settings-card">
+        <p class="text-muted" style="font-size:0.9rem">
+            OpenStream is open-source software. Built with care as a lightweight
+            alternative to Plex and Jellyfin.
+        </p>
+    </div>
+</section>
+{% endblock %}

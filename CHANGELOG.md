@@ -4,6 +4,16 @@ All notable changes to OpenStream will be documented in this file.
 
 ---
 
+## [v0.1.6] — 2026-03-07
+
+### Added
+- About page (`/about`) showing app version, system info, tech stack, and project links
+- About route in `pages.py` with Python version, platform, database path, library/item/user counts
+- About link in sidebar navigation
+- About page CSS with hero card, info grid, tech stack table, and link cards
+
+---
+
 ## [v0.1.5] — 2026-03-07
 
 ### Added

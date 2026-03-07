@@ -1,12 +1,16 @@
 """Server-rendered HTML page routes."""
 
+import platform
+import sys
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from openstream.config import settings
 from openstream.database import get_db
-from openstream.models import Library, MediaItem, MediaFile, Season, Episode
+from openstream.models import Library, MediaItem, MediaFile, Season, Episode, User
 from openstream.routes.auth import get_current_user
 from openstream.updater import get_cached_update_info, detect_install_mode
 
@@ -192,5 +196,36 @@ async def settings_page(request: Request, db: Session = Depends(get_db)):
         "libraries": libraries,
         "current_version": settings.app_version,
         "install_mode": detect_install_mode(),
+        **_update_context(),
+    })
+
+
+@router.get("/about")
+async def about_page(request: Request, db: Session = Depends(get_db)):
+    """About page — version, tech stack, system info."""
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login")
+
+    libraries = db.query(Library).all()
+    library_count = len(libraries)
+    total_items = db.query(func.count(MediaItem.id)).scalar() or 0
+    user_count = db.query(func.count(User.id)).scalar() or 0
+
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    platform_info = f"{platform.system()} {platform.release()}"
+
+    return _templates().TemplateResponse("about.html", {
+        "request": request,
+        "user": user,
+        "libraries": libraries,
+        "version": settings.app_version,
+        "install_mode": detect_install_mode(),
+        "python_version": python_version,
+        "platform_info": platform_info,
+        "db_path": str(settings.db_path),
+        "library_count": library_count,
+        "total_items": total_items,
+        "user_count": user_count,
         **_update_context(),
     })

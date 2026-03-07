@@ -499,6 +499,82 @@ a:hover { color: var(--primary-hover); }
     word-break: break-all;
 }
 
+/* ---------- About Page ---------- */
+
+.about-section { margin-bottom: 1.5rem; }
+
+.about-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.about-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary), #8b7cf7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -1px;
+    flex-shrink: 0;
+}
+.about-hero-info { display: flex; flex-direction: column; gap: 0.35rem; }
+.about-app-name { font-size: 1.75rem; font-weight: 700; margin: 0; }
+.about-version { align-self: flex-start; }
+.about-tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
+
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0;
+}
+.about-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.about-item:last-child { border-bottom: none; }
+.about-label { font-size: 0.85rem; color: var(--text-muted); }
+.about-value { font-size: 0.9rem; font-weight: 500; }
+
+.about-tech-table td:first-child {
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.about-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+}
+.about-link-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    color: var(--text) !important;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.about-link-card:last-child { border-bottom: none; }
+.about-link-card:hover { background: var(--surface-hover); }
+.about-link-icon { font-size: 1.3rem; flex-shrink: 0; }
+.about-link-card div { display: flex; flex-direction: column; }
+.about-link-card strong { font-size: 0.9rem; }
+.about-link-card .text-muted { font-size: 0.8rem; }
+
 /* ---------- Update Banner ---------- */
 
 .update-banner {
