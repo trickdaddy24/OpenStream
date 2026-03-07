@@ -2,7 +2,7 @@
 
 A self-hosted Python media server that scans local video libraries, fetches metadata and artwork from TMDB, and streams content to any browser — with on-the-fly FFmpeg transcoding when needed.
 
-**Current version:** `v0.1.8`
+**Current version:** `v0.1.9`
 
 ---
 
@@ -365,6 +365,7 @@ All API endpoints return JSON and are prefixed with `/api`.
 
 | Version | Date | Note |
 |---------|------|------|
+| v0.1.9 | 2026-03-07 | Plex-style smart playback — direct stream, audio-only transcode, playback badges |
 | v0.1.8 | 2026-03-07 | Add real-time scan progress bar for movies and TV shows with global indicator |
 | v0.1.7 | 2026-03-07 | Fix HLS buffering — atomic segment writes, ultrafast preset, .env path fix |
 | v0.1.6 | 2026-03-07 | Add About page with version, system info, tech stack, and project links |

@@ -56,11 +56,14 @@ def build_ffmpeg_command(
         ])
 
     # Audio encoding
-    cmd.extend([
-        "-c:a", profile["audio_codec"],
-        "-b:a", profile["audio_bitrate"],
-        "-ac", profile["audio_channels"],
-    ])
+    if profile.get("audio_codec") == "copy":
+        cmd.extend(["-c:a", "copy"])
+    else:
+        cmd.extend([
+            "-c:a", profile["audio_codec"],
+            "-b:a", profile.get("audio_bitrate", "128k"),
+            "-ac", str(profile.get("audio_channels", "2")),
+        ])
 
     # HLS output
     cmd.extend([

@@ -24,6 +24,21 @@
     .quality-select {
         margin-top: 1rem;
     }
+    .playback-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.15rem 0.55rem;
+        border-radius: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    .playback-badge-direct   { background: var(--success); color: #000; }
+    .playback-badge-stream   { background: #2ecc71; color: #000; }
+    .playback-badge-audio    { background: var(--warning); color: #000; }
+    .playback-badge-transcode { background: var(--primary); color: #fff; }
+    .codec-info { font-size: 0.85rem; }
 </style>
 {% endblock %}
 
@@ -39,7 +54,7 @@
 
     <div id="player-error" style="display:none; color:var(--danger); margin-top:0.5rem; font-size:0.9rem"></div>
 
-    {% if not direct_play %}
+    {% if playback_mode == 'full_transcode' %}
     <div class="quality-select">
         <label>Quality: </label>
         <select id="quality-select" class="select-input">
@@ -53,10 +68,19 @@
 
     <div class="player-info">
         <h3>{{ item.title }}{% if item.year %} ({{ item.year }}){% endif %}</h3>
-        <p class="text-muted">
+        <p class="codec-info text-muted">
             {{ file.video_codec or '?' }} / {{ file.audio_codec or '?' }}
             {% if file.resolution %} &middot; {{ file.resolution }}{% endif %}
-            {% if direct_play %} &middot; Direct Play{% else %} &middot; Transcoding{% endif %}
+            &middot;
+            {% if playback_mode == 'direct_play' %}
+                <span class="playback-badge playback-badge-direct">Direct Play</span>
+            {% elif playback_mode == 'direct_stream' %}
+                <span class="playback-badge playback-badge-stream">Direct Stream</span>
+            {% elif playback_mode == 'audio_transcode' %}
+                <span class="playback-badge playback-badge-audio">Audio Transcode</span>
+            {% else %}
+                <span class="playback-badge playback-badge-transcode">Transcoding</span>
+            {% endif %}
         </p>
     </div>
 </div>
@@ -71,6 +95,7 @@
         fileId: {{ file.id }},
         itemId: {{ item.id }},
         directPlay: {{ 'true' if direct_play else 'false' }},
+        playbackMode: '{{ playback_mode }}',
     });
 </script>
 {% endblock %}

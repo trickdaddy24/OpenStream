@@ -4,6 +4,20 @@ All notable changes to OpenStream will be documented in this file.
 
 ---
 
+## [v0.1.9] — 2026-03-07
+
+### Added
+- Plex-style smart playback decision system — automatically picks the lightest processing path
+- **Direct Stream** mode — MKV files with H.264 + AAC are remuxed to HLS with `-c:v copy -c:a copy` (near-zero CPU, no quality loss)
+- **Audio-Only Transcode** mode — H.264 video with DTS/TrueHD/AC3/FLAC audio copies the video stream and only transcodes audio to AAC (very light CPU)
+- New `get_playback_decision()` function in `ffprobe.py` evaluates container, video codec, and audio codec to choose: direct play > direct stream > audio transcode > full transcode
+- `remux` and `audio_transcode` profiles in `profiles.py` for the copy-based HLS modes
+- Playback mode badges on the player page (green "Direct Play", green "Direct Stream", yellow "Audio Transcode", purple "Transcoding")
+- Direct stream and audio transcode modes auto-start playback without requiring user to pick quality
+- Full HLS audio copy support in `hls.py` (`-c:a copy` when profile specifies `audio_codec: "copy"`)
+
+---
+
 ## [v0.1.8] — 2026-03-07
 
 ### Added

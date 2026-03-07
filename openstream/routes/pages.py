@@ -166,17 +166,28 @@ async def player_page(
     item = db.query(MediaItem).get(media_file.media_item_id)
     libraries = db.query(Library).all()
 
-    # Check if direct play is possible
-    from openstream.transcoder.ffprobe import can_direct_play, probe_file
+    # Determine the best playback strategy (Plex-style hierarchy)
+    from openstream.transcoder.ffprobe import get_playback_decision, probe_file
     probe = probe_file(media_file.file_path)
-    direct = can_direct_play(probe)
+    playback_mode = get_playback_decision(probe)
+
+    # Human-readable labels for the UI
+    mode_labels = {
+        "direct_play": "Direct Play",
+        "direct_stream": "Direct Stream",
+        "audio_transcode": "Audio Transcode",
+        "full_transcode": "Transcoding",
+    }
 
     return _templates().TemplateResponse("player.html", {
         "request": request,
         "user": user,
         "file": media_file,
         "item": item,
-        "direct_play": direct,
+        "direct_play": playback_mode == "direct_play",
+        "playback_mode": playback_mode,
+        "playback_label": mode_labels.get(playback_mode, "Transcoding"),
+        "probe": probe or {},
         "libraries": libraries,
         **_update_context(),
     })

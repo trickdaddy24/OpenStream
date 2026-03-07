@@ -1,4 +1,11 @@
-/* OpenStream — Video Player (Video.js + HLS.js) */
+/* OpenStream — Video Player (Video.js + HLS.js)
+ *
+ * Supports four playback modes (Plex-style hierarchy):
+ *   direct_play     — MP4 served as-is (zero CPU)
+ *   direct_stream   — MKV remuxed to HLS with -c copy (near-zero CPU)
+ *   audio_transcode — video copied, audio transcoded to AAC (light CPU)
+ *   full_transcode  — full HLS transcode with quality presets
+ */
 
 var currentSessionId = null;
 var positionInterval = null;
@@ -27,19 +34,32 @@ function initPlayer(config) {
         }
     });
 
-    if (config.directPlay) {
-        // Direct play — set source via Video.js API
+    var mode = config.playbackMode || (config.directPlay ? 'direct_play' : 'full_transcode');
+
+    if (mode === 'direct_play') {
+        // ──── Direct Play ────
+        // File is browser-ready (MP4 + H.264 + AAC). Serve as-is.
         player.src({
             src: '/stream/direct/' + config.fileId,
             type: 'video/mp4',
         });
-
-        // Let the user click the big play button (no autoplay — browsers block it)
         player.ready(function () {
-            console.log('Direct play ready for file', config.fileId);
+            console.log('[Player] Direct Play ready for file', config.fileId);
         });
+
+    } else if (mode === 'direct_stream' || mode === 'audio_transcode') {
+        // ──── Direct Stream / Audio Transcode ────
+        // Automatically start HLS with copy profile (no quality picker).
+        // direct_stream  → remux profile (-c:v copy -c:a copy)
+        // audio_transcode → audio_transcode profile (-c:v copy -c:a aac)
+        var profileName = (mode === 'direct_stream') ? 'remux' : 'audio_transcode';
+        console.log('[Player] Auto-starting', mode, 'with profile:', profileName);
+
+        _startHlsSession(player, config, profileName, errorDiv);
+
     } else {
-        // Transcoding — user must click "Start Playback"
+        // ──── Full Transcode ────
+        // User picks quality and clicks "Start Playback".
         var startBtn = document.getElementById('start-transcode');
         var qualitySelect = document.getElementById('quality-select');
 
@@ -49,36 +69,20 @@ function initPlayer(config) {
                 startBtn.textContent = 'Starting transcode...';
                 if (errorDiv) errorDiv.style.display = 'none';
 
-                try {
-                    var r = await fetch('/stream/transcode', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            file_id: config.fileId,
-                            profile: qualitySelect.value,
-                            start_time: 0,
-                        }),
+                _startHlsSession(player, config, qualitySelect.value, errorDiv)
+                    .then(function () {
+                        startBtn.style.display = 'none';
+                        if (qualitySelect) qualitySelect.parentElement.style.display = 'none';
+                    })
+                    .catch(function (e) {
+                        console.error('Transcode start failed:', e);
+                        startBtn.disabled = false;
+                        startBtn.textContent = 'Retry';
+                        if (errorDiv) {
+                            errorDiv.textContent = 'Transcode failed: ' + e.message;
+                            errorDiv.style.display = 'block';
+                        }
                     });
-                    var data = await r.json();
-                    if (!r.ok) throw new Error(data.detail || 'Transcode request failed');
-
-                    currentSessionId = data.session_id;
-                    var hlsUrl = '/stream/hls/' + data.session_id + '/playlist.m3u8';
-                    console.log('Transcode started, HLS URL:', hlsUrl);
-
-                    _loadHls(player, hlsUrl);
-
-                    startBtn.style.display = 'none';
-                    if (qualitySelect) qualitySelect.parentElement.style.display = 'none';
-                } catch (e) {
-                    console.error('Transcode start failed:', e);
-                    startBtn.disabled = false;
-                    startBtn.textContent = 'Retry';
-                    if (errorDiv) {
-                        errorDiv.textContent = 'Transcode failed: ' + e.message;
-                        errorDiv.style.display = 'block';
-                    }
-                }
             });
         }
     }
@@ -110,6 +114,31 @@ function initPlayer(config) {
 }
 
 
+/**
+ * Start an HLS transcode/remux session and load it into the player.
+ * Works for all non-direct-play modes (remux, audio_transcode, full).
+ */
+async function _startHlsSession(player, config, profileName, errorDiv) {
+    var r = await fetch('/stream/transcode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            file_id: config.fileId,
+            profile: profileName,
+            start_time: 0,
+        }),
+    });
+    var data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Transcode request failed');
+
+    currentSessionId = data.session_id;
+    var hlsUrl = '/stream/hls/' + data.session_id + '/playlist.m3u8';
+    console.log('[Player] HLS session started:', data.session_id, 'profile:', profileName);
+
+    _loadHls(player, hlsUrl);
+}
+
+
 function _loadHls(player, hlsUrl) {
     // Get the underlying <video> DOM element from Video.js
     var videoElement = player.tech({ IWillNotUseThisInPlugins: true }).el();
@@ -133,14 +162,14 @@ function _loadHls(player, hlsUrl) {
         hls.attachMedia(videoElement);
 
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
-            console.log('HLS manifest parsed, starting playback');
+            console.log('[Player] HLS manifest parsed, starting playback');
             player.play().catch(function (e) {
-                console.warn('Autoplay after transcode blocked:', e.message);
+                console.warn('[Player] Autoplay blocked:', e.message);
             });
         });
 
         hls.on(Hls.Events.ERROR, function (event, data) {
-            console.error('HLS.js error:', data.type, data.details, data);
+            console.error('[Player] HLS.js error:', data.type, data.details, data);
             if (data.fatal) {
                 var errorDiv = document.getElementById('player-error');
                 if (errorDiv) {
@@ -148,10 +177,10 @@ function _loadHls(player, hlsUrl) {
                     errorDiv.style.display = 'block';
                 }
                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                    console.log('Attempting HLS recovery...');
+                    console.log('[Player] Attempting HLS network recovery...');
                     hls.startLoad();
                 } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                    console.log('Attempting HLS media error recovery...');
+                    console.log('[Player] Attempting HLS media error recovery...');
                     hls.recoverMediaError();
                 } else {
                     hls.destroy();
@@ -165,7 +194,7 @@ function _loadHls(player, hlsUrl) {
             type: 'application/vnd.apple.mpegurl',
         });
         player.play().catch(function (e) {
-            console.warn('Autoplay after transcode blocked:', e.message);
+            console.warn('[Player] Autoplay blocked:', e.message);
         });
     } else {
         var errorDiv = document.getElementById('player-error');

@@ -78,3 +78,58 @@ def can_direct_play(probe: dict | None) -> bool:
     audio_ok = probe.get("audio_codec") in ("aac", "mp3")
 
     return container_ok and video_ok and audio_ok
+
+
+# Browser-compatible codec sets
+_BROWSER_VIDEO_CODECS = {"h264", "avc1"}
+_BROWSER_AUDIO_CODECS = {"aac", "mp3"}
+_BROWSER_CONTAINERS = {"mov,mp4,m4a,3gp,3g2,mj2", "mp4", "m4v", "mov"}
+
+
+def get_playback_decision(probe: dict | None) -> str:
+    """Determine the optimal playback strategy for a media file.
+
+    Mimics Plex's playback hierarchy — picks the lightest processing path:
+
+    1. **direct_play** — file is already browser-ready (MP4 + H.264 + AAC/MP3).
+       Zero CPU cost; served as a static file with Range/seek support.
+
+    2. **direct_stream** — video AND audio codecs are browser-compatible but the
+       container is wrong (e.g. MKV with H.264 + AAC).  FFmpeg remuxes to HLS
+       with ``-c:v copy -c:a copy`` — near-zero CPU, no quality loss.
+
+    3. **audio_transcode** — video codec is browser-compatible (H.264) but audio
+       is not (DTS, TrueHD, AC3, FLAC, etc.).  FFmpeg copies the video stream
+       and only transcodes the audio to AAC — very light CPU usage.
+
+    4. **full_transcode** — video codec requires re-encoding (HEVC, VP9, MPEG-2,
+       AV1, etc.).  Full HLS transcode with quality presets.
+
+    Returns:
+        One of ``"direct_play"``, ``"direct_stream"``, ``"audio_transcode"``,
+        or ``"full_transcode"``.
+    """
+    if not probe:
+        return "full_transcode"
+
+    container = probe.get("container", "")
+    video_codec = probe.get("video_codec", "")
+    audio_codec = probe.get("audio_codec", "")
+
+    container_ok = container in _BROWSER_CONTAINERS
+    video_ok = video_codec in _BROWSER_VIDEO_CODECS
+    audio_ok = audio_codec in _BROWSER_AUDIO_CODECS
+
+    if container_ok and video_ok and audio_ok:
+        return "direct_play"
+
+    if video_ok and audio_ok:
+        # Right codecs, wrong container (e.g. MKV with H.264 + AAC)
+        return "direct_stream"
+
+    if video_ok and not audio_ok:
+        # Video is fine, audio needs transcoding (DTS, AC3, FLAC, etc.)
+        return "audio_transcode"
+
+    # Video needs re-encoding (HEVC, VP9, MPEG-2, etc.)
+    return "full_transcode"
