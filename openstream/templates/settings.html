@@ -65,6 +65,36 @@
     </div>
 </section>
 
+<section id="account" class="section settings-section">
+    <h3 class="section-title">Account — Change Password</h3>
+    <div class="settings-card">
+        <form id="change-password-form" style="max-width:420px">
+            <div class="pw-field">
+                <label class="pw-label">Current Password</label>
+                <input type="password" name="current_password" class="input pw-input" required autocomplete="current-password">
+            </div>
+            <div class="pw-field">
+                <label class="pw-label">New Password</label>
+                <input type="password" id="new-password" name="new_password" class="input pw-input" required autocomplete="new-password">
+                <div id="pw-strength-bar" class="pw-strength-bar">
+                    <div id="pw-strength-fill" class="pw-strength-fill"></div>
+                </div>
+                <span id="pw-strength-label" class="pw-strength-label"></span>
+            </div>
+            <div class="pw-field">
+                <label class="pw-label">Confirm New Password</label>
+                <input type="password" id="confirm-password" name="confirm_password" class="input pw-input" required autocomplete="new-password">
+                <span id="pw-match-indicator" class="pw-match-indicator"></span>
+            </div>
+
+            <div id="pw-rules" class="pw-rules"></div>
+
+            <button type="submit" id="pw-submit-btn" class="btn btn-primary" style="margin-top:1rem" disabled>Change Password</button>
+            <div id="pw-message" class="form-message" style="margin-top:0.5rem"></div>
+        </form>
+    </div>
+</section>
+
 <section id="updates" class="section settings-section">
     <h3 class="section-title">Updates</h3>
     <div class="settings-card">
@@ -98,6 +128,157 @@
 
 {% block scripts %}
 <script>
+/* ========== Change Password ========== */
+(function() {
+    const newPw = document.getElementById('new-password');
+    const confirmPw = document.getElementById('confirm-password');
+    const strengthFill = document.getElementById('pw-strength-fill');
+    const strengthLabel = document.getElementById('pw-strength-label');
+    const matchIndicator = document.getElementById('pw-match-indicator');
+    const rulesDiv = document.getElementById('pw-rules');
+    const submitBtn = document.getElementById('pw-submit-btn');
+    const pwMessage = document.getElementById('pw-message');
+
+    let debounceTimer;
+    let lastValidation = { valid: false, errors: [] };
+
+    // Strength colors
+    const strengthColors = { weak: '#ff4757', fair: '#ffa502', good: '#2ed573', strong: '#00b894' };
+
+    // Load password policy rules on page load
+    fetch('/api/password/policy').then(r => r.json()).then(data => {
+        rulesDiv.innerHTML = data.rules.map(r =>
+            `<div class="pw-rule" data-key="${r.key}"><span class="pw-rule-icon">&#9675;</span> ${r.rule}</div>`
+        ).join('');
+    });
+
+    // Live validate on keyup
+    newPw.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(validateLive, 200);
+    });
+    confirmPw.addEventListener('input', checkMatch);
+
+    async function validateLive() {
+        const pwd = newPw.value;
+        if (!pwd) {
+            strengthFill.style.width = '0%';
+            strengthLabel.textContent = '';
+            rulesDiv.querySelectorAll('.pw-rule').forEach(el => {
+                el.querySelector('.pw-rule-icon').innerHTML = '&#9675;';
+                el.className = 'pw-rule';
+            });
+            lastValidation = { valid: false, errors: [] };
+            updateSubmitState();
+            return;
+        }
+
+        try {
+            const r = await fetch('/api/password/validate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password: pwd, username: '{{ user.username if user else "" }}' }),
+            });
+            const data = await r.json();
+            lastValidation = data;
+
+            // Strength bar
+            strengthFill.style.width = data.score + '%';
+            strengthFill.style.background = strengthColors[data.strength] || '#ff4757';
+            strengthLabel.textContent = data.strength.charAt(0).toUpperCase() + data.strength.slice(1);
+            strengthLabel.style.color = strengthColors[data.strength] || '#ff4757';
+
+            // Per-rule checkmarks
+            const errorLower = data.errors.map(e => e.toLowerCase());
+            rulesDiv.querySelectorAll('.pw-rule').forEach(el => {
+                const key = el.dataset.key;
+                const hasError = errorLower.some(e => {
+                    if (key === 'min_length') return e.includes('at least') && e.includes('character');
+                    if (key === 'uppercase') return e.includes('uppercase');
+                    if (key === 'lowercase') return e.includes('lowercase');
+                    if (key === 'digit') return e.includes('digit');
+                    if (key === 'special') return e.includes('special');
+                    if (key === 'unique') return e.includes('unique');
+                    return false;
+                });
+                if (hasError) {
+                    el.querySelector('.pw-rule-icon').innerHTML = '&#10007;';
+                    el.className = 'pw-rule pw-rule-fail';
+                } else {
+                    el.querySelector('.pw-rule-icon').innerHTML = '&#10003;';
+                    el.className = 'pw-rule pw-rule-pass';
+                }
+            });
+
+            checkMatch();
+            updateSubmitState();
+        } catch (e) { /* silent */ }
+    }
+
+    function checkMatch() {
+        const match = newPw.value && confirmPw.value && newPw.value === confirmPw.value;
+        if (!confirmPw.value) {
+            matchIndicator.textContent = '';
+        } else if (match) {
+            matchIndicator.textContent = 'Passwords match';
+            matchIndicator.style.color = '#2ed573';
+        } else {
+            matchIndicator.textContent = 'Passwords do not match';
+            matchIndicator.style.color = '#ff4757';
+        }
+        updateSubmitState();
+    }
+
+    function updateSubmitState() {
+        const match = newPw.value && confirmPw.value && newPw.value === confirmPw.value;
+        submitBtn.disabled = !(lastValidation.valid && match);
+    }
+
+    // Submit
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Changing...';
+        pwMessage.textContent = '';
+
+        try {
+            const r = await fetch('/api/password/change', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    current_password: form.current_password.value,
+                    new_password: form.new_password.value,
+                    confirm_password: form.confirm_password.value,
+                }),
+            });
+            const data = await r.json();
+            if (r.ok) {
+                pwMessage.textContent = data.message || 'Password changed!';
+                pwMessage.className = 'form-message success';
+                form.reset();
+                strengthFill.style.width = '0%';
+                strengthLabel.textContent = '';
+                matchIndicator.textContent = '';
+                rulesDiv.querySelectorAll('.pw-rule').forEach(el => {
+                    el.querySelector('.pw-rule-icon').innerHTML = '&#9675;';
+                    el.className = 'pw-rule';
+                });
+            } else {
+                pwMessage.textContent = data.detail || 'Error changing password';
+                pwMessage.className = 'form-message error';
+            }
+        } catch (err) {
+            pwMessage.textContent = 'Network error';
+            pwMessage.className = 'form-message error';
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Change Password';
+    });
+})();
+
+/* ========== Library Management ========== */
 document.getElementById('add-library-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;

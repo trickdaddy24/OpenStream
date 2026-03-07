@@ -432,6 +432,56 @@ a:hover { color: var(--primary-hover); }
     transition: width 0.3s;
 }
 
+/* ---------- Password / Account ---------- */
+
+.pw-field { margin-bottom: 1rem; }
+.pw-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+.pw-input { width: 100%; }
+
+.pw-strength-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 0.4rem;
+}
+.pw-strength-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.3s, background 0.3s;
+}
+.pw-strength-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.2rem;
+}
+.pw-match-indicator {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+}
+.pw-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+}
+.pw-rule {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.pw-rule-icon { font-size: 0.85rem; min-width: 1rem; text-align: center; }
+.pw-rule-pass { color: var(--success); }
+.pw-rule-pass .pw-rule-icon { color: var(--success); }
+.pw-rule-fail { color: var(--danger); }
+.pw-rule-fail .pw-rule-icon { color: var(--danger); }
+
 /* ---------- Update Banner ---------- */
 
 .update-banner {

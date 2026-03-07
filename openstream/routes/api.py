@@ -9,8 +9,11 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+import bcrypt
+
 from openstream.database import get_db
-from openstream.models import Library, MediaItem, MediaFile, WatchHistory
+from openstream.models import Library, MediaItem, MediaFile, User, WatchHistory
+from openstream.passwords import validate_password, get_policy_rules
 from openstream.routes.auth import get_current_user
 from openstream.scanner.tasks import run_library_scan, progress_queues
 from openstream.updater import (
@@ -35,6 +38,12 @@ class WatchHistoryUpdate(BaseModel):
     episode_id: int | None = None
     position_secs: int = 0
     completed: bool = False
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
 
 
 # ---------- Library endpoints ----------
@@ -284,6 +293,66 @@ async def update_watch_history(
         db.add(wh)
     db.commit()
     return {"ok": True}
+
+
+# ---------- Password / Account ----------
+
+@router.get("/password/policy")
+async def password_policy():
+    """Return the current password complexity rules."""
+    return {"rules": get_policy_rules()}
+
+
+@router.post("/password/validate")
+async def password_validate(request: Request):
+    """Live-validate a password and return strength info (no auth required for UX)."""
+    body = await request.json()
+    pwd = body.get("password", "")
+    username = body.get("username", "")
+    result = validate_password(pwd, username=username)
+    return {
+        "valid": result.valid,
+        "errors": result.errors,
+        "score": result.score,
+        "strength": result.strength,
+    }
+
+
+@router.post("/password/change")
+async def change_password(
+    data: PasswordChange,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Change the current user's password with complexity validation."""
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+
+    # Verify current password
+    if not bcrypt.checkpw(data.current_password.encode(), user.password_hash.encode()):
+        raise HTTPException(400, "Current password is incorrect")
+
+    # Passwords must match
+    if data.new_password != data.confirm_password:
+        raise HTTPException(400, "New passwords do not match")
+
+    # Must differ from current
+    if data.current_password == data.new_password:
+        raise HTTPException(400, "New password must be different from current password")
+
+    # Validate complexity
+    result = validate_password(data.new_password, username=user.username)
+    if not result.valid:
+        raise HTTPException(400, "; ".join(result.errors))
+
+    # Hash and save
+    hashed = bcrypt.hashpw(data.new_password.encode(), bcrypt.gensalt()).decode()
+    user.password_hash = hashed
+    db.commit()
+
+    logger.info("Password changed for user '%s'", user.username)
+    return {"ok": True, "message": "Password changed successfully"}
 
 
 # ---------- Update System ----------
