@@ -33,12 +33,11 @@
         <a href="/item/{{ item.id }}" class="btn btn-sm">&larr; Back to {{ item.title }}</a>
     </div>
 
-    <video id="video-player" class="video-js vjs-big-play-centered vjs-theme-dark"
-           controls preload="auto" data-setup="{}">
-        {% if direct_play %}
-        <source src="/stream/direct/{{ file.id }}" type="video/mp4">
-        {% endif %}
+    <video id="video-player" class="video-js vjs-big-play-centered"
+           controls preload="auto">
     </video>
+
+    <div id="player-error" style="display:none; color:var(--danger); margin-top:0.5rem; font-size:0.9rem"></div>
 
     {% if not direct_play %}
     <div class="quality-select">

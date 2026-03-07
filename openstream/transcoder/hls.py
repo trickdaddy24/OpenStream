@@ -38,8 +38,9 @@ def build_ffmpeg_command(
 
     cmd.extend(["-i", input_path])
 
-    # Map first video and audio streams
-    cmd.extend(["-map", "0:v:0", "-map", "0:a:0"])
+    # Map first video and first audio stream
+    # The trailing ? on audio makes it optional (no error if audio is missing)
+    cmd.extend(["-map", "0:v:0", "-map", "0:a:0?"])
 
     # Video encoding
     if profile["video_codec"] == "copy":
@@ -51,8 +52,7 @@ def build_ffmpeg_command(
             "-b:v", profile["video_bitrate"],
             "-maxrate", profile.get("max_rate", profile["video_bitrate"]),
             "-bufsize", profile.get("buf_size", profile["video_bitrate"]),
-            "-vf", f"scale={profile['resolution']}:force_original_aspect_ratio=decrease,"
-                   f"pad={profile['resolution']}:(ow-iw)/2:(oh-ih)/2",
+            "-vf", f"scale={profile['resolution']}:force_original_aspect_ratio=decrease",
         ])
 
     # Audio encoding
