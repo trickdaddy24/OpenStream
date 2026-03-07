@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = "OpenStream"
-    app_version: str = "0.1.1"
+    app_version: str = "0.1.2"
     secret_key: str = "change-me-in-production"
     debug: bool = False
 

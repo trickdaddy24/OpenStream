@@ -55,4 +55,4 @@ External: FFmpeg + FFprobe on PATH, TMDB API key in .env
 - CSS custom properties for theming (dark theme default)
 - All transcoding via FFmpeg subprocess (not libraries)
 
-**Current version:** `v0.1.1`
+**Current version:** `v0.1.2`

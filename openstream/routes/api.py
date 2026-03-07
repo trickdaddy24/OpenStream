@@ -13,6 +13,9 @@ from openstream.database import get_db
 from openstream.models import Library, MediaItem, MediaFile, WatchHistory
 from openstream.routes.auth import get_current_user
 from openstream.scanner.tasks import run_library_scan, progress_queues
+from openstream.updater import (
+    check_for_update, get_cached_update_info, get_update_instructions, perform_update,
+)
 
 logger = logging.getLogger("openstream.routes.api")
 
@@ -281,3 +284,32 @@ async def update_watch_history(
         db.add(wh)
     db.commit()
     return {"ok": True}
+
+
+# ---------- Update System ----------
+
+@router.post("/update/check")
+async def api_check_update():
+    """Check GitHub for a newer release (cached 24h)."""
+    return await check_for_update()
+
+
+@router.get("/update/status")
+async def api_update_status():
+    """Return cached update info without hitting GitHub."""
+    info = get_cached_update_info()
+    if info:
+        return info
+    return {"update_available": False, "current_version": "unknown"}
+
+
+@router.get("/update/instructions")
+async def api_update_instructions():
+    """Return update instructions for the detected install mode."""
+    return get_update_instructions()
+
+
+@router.post("/update/apply")
+async def api_apply_update():
+    """Execute the update action (git pull or pip upgrade)."""
+    return perform_update()

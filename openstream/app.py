@@ -44,14 +44,36 @@ def _ensure_admin():
         db.close()
 
 
+async def _startup_update_check():
+    """Run update check in background after startup."""
+    import asyncio
+    await asyncio.sleep(2)  # Let the server finish starting first
+    try:
+        from openstream.updater import check_for_update
+        info = await check_for_update()
+        if info.get("update_available"):
+            logger.info(
+                "Update available: %s -> %s  (%s)",
+                info["current_version"], info["remote_version"], info["release_url"],
+            )
+    except Exception:
+        pass  # Never let update check crash the app
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
+    import asyncio
+
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     logger.info("OpenStream %s starting up", settings.app_version)
     _ensure_dirs()
     init_db()
     _ensure_admin()
+
+    # Background update check (non-blocking, silent on failure)
+    asyncio.create_task(_startup_update_check())
+
     yield
     logger.info("OpenStream shutting down")
 

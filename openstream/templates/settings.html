@@ -65,6 +65,28 @@
     </div>
 </section>
 
+<section id="updates" class="section settings-section">
+    <h3 class="section-title">Updates</h3>
+    <div class="settings-card">
+        <div class="update-status">
+            <div>
+                <strong>Current version:</strong> <span id="current-ver">{{ current_version }}</span>
+                <span class="badge badge-outline" style="margin-left:0.5rem">{{ install_mode }}</span>
+            </div>
+            <div id="update-result" style="margin-top:0.5rem"></div>
+        </div>
+        <div style="margin-top:1rem; display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap">
+            <button id="check-update-btn" class="btn btn-primary" onclick="checkForUpdate()">Check for Updates</button>
+            <button id="apply-update-btn" class="btn" style="display:none" onclick="applyUpdate()">Apply Update</button>
+            <span id="update-command" class="text-muted" style="font-family:monospace; font-size:0.85rem"></span>
+        </div>
+        <div id="update-notes" class="update-notes" style="display:none; margin-top:1rem">
+            <h4>Release Notes</h4>
+            <pre id="update-notes-text" style="white-space:pre-wrap; font-size:0.85rem; color:var(--text-muted)"></pre>
+        </div>
+    </div>
+</section>
+
 <div id="scan-progress-area" class="settings-card" style="display:none">
     <h4>Scan Progress</h4>
     <div class="progress-bar-container">
@@ -139,6 +161,78 @@ async function deleteLibrary(id) {
     if (!confirm('Delete this library and all its items?')) return;
     const r = await fetch(`/api/libraries/${id}`, {method: 'DELETE'});
     if (r.ok) location.reload();
+}
+
+async function checkForUpdate() {
+    const btn = document.getElementById('check-update-btn');
+    const result = document.getElementById('update-result');
+    const applyBtn = document.getElementById('apply-update-btn');
+    const cmdSpan = document.getElementById('update-command');
+    const notesDiv = document.getElementById('update-notes');
+    const notesText = document.getElementById('update-notes-text');
+
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    result.textContent = '';
+
+    try {
+        const r = await fetch('/api/update/check', {method: 'POST'});
+        const data = await r.json();
+
+        if (data.update_available) {
+            result.innerHTML = `<span class="badge badge-warning">Update available: <strong>${data.remote_version}</strong></span>`;
+
+            // Show apply button if auto-update is supported
+            const instrR = await fetch('/api/update/instructions');
+            const instr = await instrR.json();
+            cmdSpan.textContent = instr.command;
+
+            if (instr.auto) {
+                applyBtn.style.display = 'inline-flex';
+                applyBtn.textContent = instr.label;
+            }
+
+            if (data.release_notes) {
+                notesText.textContent = data.release_notes;
+                notesDiv.style.display = 'block';
+            }
+        } else {
+            result.innerHTML = '<span class="badge badge-success">Up to date</span>';
+        }
+    } catch (e) {
+        result.innerHTML = '<span class="badge badge-danger">Check failed</span>';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Check for Updates';
+}
+
+async function applyUpdate() {
+    const btn = document.getElementById('apply-update-btn');
+    const result = document.getElementById('update-result');
+
+    if (!confirm('Apply update now? The server will need to be restarted afterward.')) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+
+    try {
+        const r = await fetch('/api/update/apply', {method: 'POST'});
+        const data = await r.json();
+
+        if (data.success) {
+            result.innerHTML = `<span class="badge badge-success">Updated! ${data.restart_required ? 'Restart the server to apply.' : ''}</span>`;
+            btn.style.display = 'none';
+        } else {
+            result.innerHTML = `<span class="badge badge-danger">Failed:</span> <span class="text-muted">${data.output}</span>`;
+            btn.disabled = false;
+            btn.textContent = 'Retry';
+        }
+    } catch (e) {
+        result.innerHTML = '<span class="badge badge-danger">Update failed</span>';
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+    }
 }
 </script>
 {% endblock %}

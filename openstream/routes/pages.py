@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from openstream.config import settings
 from openstream.database import get_db
 from openstream.models import Library, MediaItem, MediaFile, Season, Episode
 from openstream.routes.auth import get_current_user
+from openstream.updater import get_cached_update_info, detect_install_mode
 
 router = APIRouter(tags=["pages"])
 
@@ -14,6 +16,18 @@ router = APIRouter(tags=["pages"])
 def _templates():
     from openstream.app import templates
     return templates
+
+
+def _update_context() -> dict:
+    """Return update-related template variables."""
+    info = get_cached_update_info()
+    if info and info.get("update_available"):
+        return {
+            "update_available": True,
+            "update_remote_version": info["remote_version"],
+            "update_current_version": info["current_version"],
+        }
+    return {"update_available": False}
 
 
 @router.get("/")
@@ -35,6 +49,7 @@ async def home(request: Request, db: Session = Depends(get_db)):
         "user": user,
         "libraries": libraries,
         "recent_items": recent,
+        **_update_context(),
     })
 
 
@@ -83,6 +98,7 @@ async def library_page(
         "libraries": libraries,
         "items": items,
         "current_sort": sort,
+        **_update_context(),
     })
 
 
@@ -124,6 +140,7 @@ async def detail_page(
         "seasons": seasons,
         "season_episodes": season_episodes,
         "libraries": libraries,
+        **_update_context(),
     })
 
 
@@ -157,6 +174,7 @@ async def player_page(
         "item": item,
         "direct_play": direct,
         "libraries": libraries,
+        **_update_context(),
     })
 
 
@@ -172,4 +190,7 @@ async def settings_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "user": user,
         "libraries": libraries,
+        "current_version": settings.app_version,
+        "install_mode": detect_install_mode(),
+        **_update_context(),
     })
