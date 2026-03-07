@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  openstream:
+    build: .
+    container_name: openstream
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persistent data (DB, metadata images, thumbnails)
+      - ./data:/app/data
+      # Mount your media folders here — add as many as you need:
+      - /path/to/your/movies:/media/movies:ro
+      - /path/to/your/tv:/media/tv:ro
+    env_file:
+      - .env
+    environment:
+      - OPENSTREAM_HOST=0.0.0.0
+      - OPENSTREAM_PORT=8000
+      - OPENSTREAM_FFMPEG_PATH=ffmpeg
+      - OPENSTREAM_FFPROBE_PATH=ffprobe
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/login')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
