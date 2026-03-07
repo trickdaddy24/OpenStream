@@ -73,6 +73,32 @@ if data_thumbs.exists():
 # Jinja2 templates
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+
+def _basename(value: str) -> str:
+    """Jinja2 filter: extract filename from a path."""
+    return Path(value).name if value else ""
+
+
+def _media_url(value: str) -> str:
+    """Jinja2 filter: convert a DB path like 'data/metadata/posters/123.jpg' to '/media-images/posters/123.jpg'."""
+    if not value:
+        return ""
+    # Normalise slashes and strip the data/metadata prefix
+    clean = str(value).replace("\\", "/")
+    prefix = str(settings.metadata_dir).replace("\\", "/")
+    if clean.startswith(prefix):
+        clean = clean[len(prefix):]
+    # Also handle relative 'data/metadata/' prefix
+    for p in ("data/metadata/", "data\\metadata\\"):
+        if clean.startswith(p):
+            clean = clean[len(p):]
+    clean = clean.lstrip("/")
+    return f"/media-images/{clean}"
+
+
+templates.env.filters["basename"] = _basename
+templates.env.filters["media_url"] = _media_url
+
 # Import and include routers
 from openstream.routes import pages, api, stream, auth  # noqa: E402
 

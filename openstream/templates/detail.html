@@ -26,11 +26,11 @@
 
 {% block content %}
 <div class="detail-hero"
-     {% if item.backdrop_path %}style="background-image: url('/media-images/backdrops/{{ item.backdrop_path | replace('\\', '/') | replace('data/metadata/', '') }}')"{% endif %}>
+     {% if item.backdrop_path %}style="background-image: url('{{ item.backdrop_path | media_url }}')"{% endif %}>
     <div class="detail-hero-overlay">
         <div class="detail-poster">
             {% if item.poster_path %}
-            <img src="/media-images/posters/{{ item.poster_path | replace('\\', '/') | replace('data/metadata/', '') }}"
+            <img src="{{ item.poster_path | media_url }}"
                  alt="{{ item.title }}" class="poster-img-lg">
             {% else %}
             <div class="poster-placeholder-lg">{{ item.title[:1] }}</div>
@@ -90,7 +90,7 @@
     <h2 class="section-title">File Info</h2>
     {% for f in files %}
     <div class="file-info-card">
-        <span>{{ f.file_path | replace('\\', '/') | split('/') | last }}</span>
+        <span>{{ f.file_path | basename }}</span>
         <span class="text-muted">
             {{ f.video_codec or '?' }} / {{ f.audio_codec or '?' }}
             {% if f.resolution %}&middot; {{ f.resolution }}{% endif %}

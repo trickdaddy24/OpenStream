@@ -1,7 +1,7 @@
 <a href="/item/{{ item.id }}" class="media-card">
     <div class="media-card-poster">
         {% if item.poster_path %}
-        <img src="/media-images/posters/{{ item.poster_path | replace('\\', '/') | replace('data/metadata/', '') }}"
+        <img src="{{ item.poster_path | media_url }}"
              alt="{{ item.title }}" loading="lazy">
         {% else %}
         <div class="poster-placeholder">{{ item.title[:1] }}</div>
