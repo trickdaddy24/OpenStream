@@ -1,8 +1,12 @@
+<div align="center">
+
 # OpenStream
 
 A self-hosted Python media server that scans local video libraries, fetches metadata and artwork from TMDB, and streams content to any browser — with on-the-fly FFmpeg transcoding when needed.
 
 **Current version:** `v0.1.9`
+
+</div>
 
 ---
 
@@ -375,3 +379,9 @@ All API endpoints return JSON and are prefixed with `/api`.
 | v0.1.2 | 2026-03-07 | Add self-update system with GitHub release checking and auto-update |
 | v0.1.1 | 2026-03-07 | Fix double poster path in image URLs and missing Jinja2 split filter |
 | v0.1.0 | 2026-03-07 | Initial release — media scanning, browsing, direct play, transcoding |
+
+---
+
+## License
+
+[MIT](LICENSE) © Minus One Labs
